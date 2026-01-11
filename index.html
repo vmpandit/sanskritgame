@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanskrit Quest: Grand Master Edition</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700&display=swap");
+
+        :root {
+            --primary-gold: #d4af37;
+            --primary-gold-dark: #aa8c2c;
+            --primary-gold-light: #fde68a;
+            --secondary-night: #020617;
+            --surface-glass: rgba(15, 23, 42, 0.85);
+            --surface-glass-border: rgba(212, 175, 55, 0.25);
+            --text-gold: #fde68a;
+            --text-main: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --shadow-realistic: 0 20px 40px -5px rgba(0, 0, 0, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--secondary-night);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.15), transparent 60%),
+                linear-gradient(to bottom, rgba(2, 6, 23, 0.8), rgba(2, 6, 23, 0.95)),
+                url('https://images.unsplash.com/photo-1564507592333-c60657eea523?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulseGold { 0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); border-color: var(--danger); } 75% { transform: translateX(5px); border-color: var(--danger); } }
+        @keyframes particle { 0% { transform: translate(0, 0) rotate(0deg); opacity: 1; } 100% { transform: translate(var(--tx), var(--ty)) rotate(720deg); opacity: 0; } }
+
+        .stagger-in { opacity: 0; animation: slideInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+        .glass-panel { background: var(--surface-glass); backdrop-filter: blur(20px); border: 1px solid var(--surface-glass-border); box-shadow: var(--shadow-realistic); border-radius: 16px; }
+
+        .header { padding: 20px 30px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .logo { font-family: 'Cinzel', serif; font-size: 24px; font-weight: 700; color: var(--primary-gold); display: flex; align-items: center; gap: 15px; }
+        .logo-icon { font-size: 32px; animation: pulseGold 3s infinite; border-radius: 50%; }
+
+        .stats { display: flex; gap: 40px; }
+        .stat-value { font-family: 'Cinzel', serif; font-size: 24px; color: var(--text-gold); }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; margin-top: 5px; }
+
+        .main-content { display: grid; grid-template-columns: 260px 1fr; gap: 30px; }
+        @media (max-width: 900px) { .main-content { grid-template-columns: 1fr; } }
+
+        .menu-item { padding: 18px 25px; margin-bottom: 12px; background: rgba(255,255,255,0.03); color: #94a3b8; font-family: 'Cinzel', serif; cursor: pointer; border-radius: 12px; transition: 0.3s; }
+        .menu-item:hover { background: rgba(255,255,255,0.08); color: var(--text-gold); padding-left: 30px; }
+        .menu-item.active { background: linear-gradient(90deg, rgba(212, 175, 55, 0.2), transparent); border-left: 4px solid var(--primary-gold); color: var(--text-gold); }
+
+        .game-area { padding: 40px; min-height: 600px; }
+        .section-title { font-family: 'Cinzel', serif; font-size: 32px; color: var(--text-gold); margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
+
+        .lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+        .lesson-card { background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; text-align: center; cursor: pointer; transition: 0.4s; position: relative; overflow: hidden; }
+        .lesson-card:hover { transform: translateY(-10px); border-color: var(--primary-gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .lesson-card.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; pointer-events: none; }
+        .lesson-icon { font-size: 48px; margin-bottom: 15px; }
+        .lesson-title { font-family: 'Cinzel', serif; color: #fff; margin-bottom: 8px; font-weight: 700; }
+        .lesson-progress { font-size: 11px; color: var(--primary-gold); text-transform: uppercase; letter-spacing: 1px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.95); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; animation: fadeIn 0.3s ease; }
+        .modal-content { width: 90%; max-width: 900px; max-height: 90vh; background: linear-gradient(160deg, #0f172a, #020617); border: 1px solid var(--primary-gold); border-radius: 20px; padding: 40px; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-gold); font-size: 30px; cursor: pointer; }
+
+        .btn { padding: 12px 30px; border-radius: 30px; font-family: 'Cinzel', serif; font-weight: 700; cursor: pointer; transition: 0.3s; border: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)); color: #000; box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
+        .btn-secondary { background: transparent; border: 1px solid var(--primary-gold); color: var(--text-gold); }
+        
+        .quiz-option { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; margin-bottom: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; text-align: center; transition: 0.2s; }
+        .quiz-option:hover { background: rgba(255,255,255,0.08); transform: translateX(5px); }
+        .quiz-option.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--success); animation: pulseGold 0.5s; }
+        .quiz-option.incorrect { animation: shake 0.4s; background: rgba(239, 68, 68, 0.2); border-color: var(--danger); }
+
+        .paradigm-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; }
+        .paradigm-table th { background: rgba(212, 175, 55, 0.1); color: var(--primary-gold); padding: 15px; text-align: left; }
+        .paradigm-table td { padding: 15px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+        /* MINI GAMES STYLES */
+        .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        .memory-card { aspect-ratio: 1; background: rgba(255,255,255,0.1); border: 1px solid var(--primary-gold); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: 0.3s; }
+        .memory-card.flipped { background: var(--primary-gold); color: #000; }
+        .memory-card.matched { opacity: 0; pointer-events: none; }
+
+        .compound-builder { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; justify-content: center; }
+        .compound-part { padding: 12px 20px; background: var(--primary-gold); color: #000; border-radius: 8px; cursor: grab; font-weight: bold; }
+        .drop-zone { min-height: 80px; border: 2px dashed var(--primary-gold); border-radius: 12px; padding: 20px; margin: 20px 0; display: flex; gap: 10px; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); }
+        
+        .meter-bar { display: flex; gap: 5px; justify-content: center; margin: 30px 0; }
+        .syllable { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .syllable.long { background: var(--primary-gold); color: #000; }
+        .syllable.short { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .particle { position: fixed; pointer-events: none; width: 8px; height: 8px; background: var(--primary-gold); border-radius: 50%; z-index: 9999; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header glass-panel">
+        <div class="logo">
+            <div class="logo-icon">🕉️</div>
+            <div>SANSKRIT QUEST <div style="font-size: 10px; font-family: 'Lato'; letter-spacing: 4px; color: var(--text-gold);">GRAND MASTER EDITION</div></div>
+        </div>
+        <div class="stats">
+            <div class="stat-item"><div class="stat-value" id="xp-value">0</div><div class="stat-label">Knowledge</div></div>
+            <div class="stat-item"><div class="stat-value" id="level-value">1</div><div class="stat-label">Rank</div></div>
+            <div class="stat-item"><div class="stat-value" id="streak-value">0</div><div class="stat-label">Streak</div></div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="sidebar glass-panel">
+            <div class="menu-item active" data-section="lessons">📜 Path of Knowledge</div>
+            <div class="menu-item" data-section="practice">⚔️ Training Grounds</div>
+            <div class="menu-item" data-section="achievements">🏆 Hall of Glory</div>
+            <div class="menu-item" data-section="vocabulary">📖 Lexicon</div>
+            <div class="menu-item" data-section="story">🛤️ The Journey</div>
+            <div class="menu-item" id="reset-btn" style="color: var(--danger);">🔄 Reincarnate</div>
+        </div>
+
+        <div class="game-area glass-panel">
+            <div class="section-title">Select Your Path</div>
+            <div id="content-area"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <div id="modal-body"></div>
+    </div>
+</div>
+
+<script>
+    /* ---- FULL CONTENT DATA ---- */
+    const gameData = {
+        lessons: [
+            // YEAR 1: BASICS
+            { id: 1, block: "Y1: Script", title: "Devanagari Vowels", icon: "🔤", type: "vowels", xpReward: 100, content: { vowels: [{devanagari:"अ",roman:"a"},{devanagari:"आ",roman:"ā"},{devanagari:"इ",roman:"i"},{devanagari:"ई",roman:"ī"},{devanagari:"उ",roman:"u"},{devanagari:"ऊ",roman:"ū"},{devanagari:"ऋ",roman:"ṛ"},{devanagari:"ए",roman:"e"},{devanagari:"ऐ",roman:"ai"},{devanagari:"ओ",roman:"o"},{devanagari:"औ",roman:"au"}]}},
+            { id: 2, block: "Y1: Script", title: "Consonants I", icon: "📝", type: "consonants", xpReward: 120, content: { consonants: [{devanagari:"क",roman:"ka"},{devanagari:"ख",roman:"kha"},{devanagari:"ग",roman:"ga"},{devanagari:"घ",roman:"gha"},{devanagari:"ङ",roman:"ṅa"},{devanagari:"च",roman:"ca"},{devanagari:"छ",roman:"cha"},{devanagari:"ज",roman:"ja"},{devanagari:"झ",roman:"jha"},{devanagari:"ञ",roman:"ña"}]}},
+            { id: 3, block: "Y1: Script", title: "Consonants II", icon: "✍️", type: "consonants", xpReward: 120, content: { consonants: [{devanagari:"ट",roman:"ṭa"},{devanagari:"ठ",roman:"ṭha"},{devanagari:"ड",roman:"ḍa"},{devanagari:"ढ",roman:"ḍha"},{devanagari:"ण",roman:"ṇa"},{devanagari:"त",roman:"ta"},{devanagari:"थ",roman:"tha"},{devanagari:"द",roman:"da"},{devanagari:"ध",roman:"dha"},{devanagari:"न",roman:"na"}]}},
+            { id: 4, block: "Y1: Script", title: "Conjuncts & Marks", icon: "🧩", type: "consonants", xpReward: 130, content: { consonants: [{devanagari:"ं",roman:"anusvāra"},{devanagari:"ः",roman:"visarga"},{devanagari:"क्ष",roman:"kṣa"},{devanagari:"ज्ञ",roman:"jña"},{devanagari:"त्र",roman:"tra"}]}},
+            { id: 5, block: "Y1: Nouns", title: "The Hero (Rāma)", icon: "🏹", type: "nounParadigm", xpReward: 150, content: { stem: "राम", gender: "masculine", paradigm: [{case:"Nom Sg", form:"रामः", gloss:"Rama (subj)"}, {case:"Acc Sg", form:"रामम्", gloss:"Rama (obj)"}, {case:"Inst Sg", form:"रामेण", gloss:"by Rama"}, {case:"Dat Sg", form:"रामाय", gloss:"for Rama"}], words: [{sanskrit:"रामः", english:"Rama"}, {sanskrit:"वनम्", english:"forest"}] } },
+            { id: 6, block: "Y1: Nouns", title: "Feminine (Sītā)", icon: "👑", type: "nounParadigm", xpReward: 150, content: { stem: "सीता", gender: "feminine", paradigm: [{case:"Nom Sg", form:"सीता", gloss:"Sita"}, {case:"Acc Sg", form:"सीताम्", gloss:"Sita (obj)"}, {case:"Inst Sg", form:"सीतया", gloss:"by Sita"}], words: [{sanskrit:"सीता", english:"Sita"}, {sanskrit:"नदी", english:"river"}] } },
+            { id: 7, block: "Y1: Nouns", title: "Neuter (Phalam)", icon: "🍎", type: "nounParadigm", xpReward: 150, content: { stem: "फल", gender: "neuter", paradigm: [{case:"Nom Sg", form:"फलम्", gloss:"fruit"}, {case:"Acc Sg", form:"फलम्", gloss:"fruit (obj)"}, {case:"Inst Sg", form:"फलेन", gloss:"by fruit"}], words: [{sanskrit:"फलम्", english:"fruit"}, {sanskrit:"मित्रम्", english:"friend"}] } },
+            { id: 8, block: "Y1: Vocab", title: "Essential Words", icon: "💎", type: "words", xpReward: 160, content: { words: [{sanskrit:"नमस्ते",roman:"namaste",english:"hello"},{sanskrit:"जल",roman:"jala",english:"water"},{sanskrit:"अग्नि",roman:"agni",english:"fire"},{sanskrit:"सूर्य",roman:"surya",english:"sun"},{sanskrit:"चंद्र",roman:"chandra",english:"moon"}]}},
+            { id: 9, block: "Y1: Vocab", title: "Numbers 1-10", icon: "🔢", type: "words", xpReward: 150, content: { words: [{sanskrit:"एकम्",roman:"ekam",english:"one"},{sanskrit:"द्वे",roman:"dve",english:"two"},{sanskrit:"त्रीणि",roman:"trini",english:"three"},{sanskrit:"चत्वारि",roman:"catvari",english:"four"},{sanskrit:"पञ्च",roman:"pancha",english:"five"}]}},
+            { id: 10, block: "Y1: Verbs", title: "Action Roots", icon: "⚡", type: "verbParadigm", xpReward: 180, content: { paradigm: [{case:"3rd Sg", form:"गच्छति", gloss:"he goes"}, {case:"1st Sg", form:"गच्छामि", gloss:"I go"}, {case:"3rd Sg", form:"पठति", gloss:"he reads"}, {case:"1st Sg", form:"पठामि", gloss:"I read"}], words: [{sanskrit:"गच्छति", english:"goes"}, {sanskrit:"पठति", english:"reads"}] } },
+            { id: 11, block: "Y1: Verbs", title: "To Be (As)", icon: "✨", type: "verbParadigm", xpReward: 180, content: { paradigm: [{case:"3rd Sg", form:"अस्ति", gloss:"is"}, {case:"1st Sg", form:"अस्मि", gloss:"I am"}, {case:"3rd Pl", form:"सन्ति", gloss:"they are"}], words: [{sanskrit:"अस्ति", english:"is"}] } },
+            { id: 12, block: "Y1: Verbs", title: "Imperatives", icon: "🗣️", type: "verbParadigm", xpReward: 180, content: { paradigm: [{case:"2nd Sg", form:"गच्छ", gloss:"Go!"}, {case:"2nd Sg", form:"पठ", gloss:"Read!"}, {case:"2nd Sg", form:"वद", gloss:"Speak!"}], words: [{sanskrit:"वद", english:"Speak!"}] } },
+            { id: 13, block: "Y1: Sandhi", title: "Vowel Sandhi", icon: "🔥", type: "sandhi", xpReward: 200, content: { pairs: [{input:"राम + अस्ति", fused:"रामोऽस्ति"}, {input:"न + अस्ति", fused:"नास्ति"}, {input:"देव + आलय", fused:"देवालय"}]}},
+            { id: 14, block: "Y1: Sandhi", title: "Visarga Sandhi", icon: "🌬️", type: "sandhi", xpReward: 200, content: { pairs: [{input:"रामः + गच्छति", fused:"रामो गच्छति"}, {input:"नमः + ते", fused:"नमस्ते"}]}},
+            { id: 15, block: "Y1: Reading", title: "Simple Sentences", icon: "📖", type: "reading", xpReward: 220, content: { sentences: [{sa:"रामः वनम् गच्छति", en:"Rama goes to the forest"}, {sa:"सीता फलम् खादति", en:"Sita eats fruit"}, {sa:"अहम् संस्कृतम् पठामि", en:"I study Sanskrit"}]}},
+            { id: 16, block: "Y1: Reading", title: "Ancient Verse", icon: "📜", type: "reading", xpReward: 250, content: { sentences: [{sa:"सत्यमेव जयते", en:"Truth alone triumphs"}, {sa:"वसुधैव कुटुम्बकम्", en:"The world is one family"}, {sa:"असतो मा सद्गमय", en:"Lead me from unreal to real"}]}},
+
+            // YEAR 2: ADVANCED
+            { id: 17, block: "Y2: Compounds", title: "Tatpuruṣa Samāsa", icon: "🔗", type: "compound", xpReward: 200, content: { compounds: [{parts:["राज", "पुत्र"], combined:"राजपुत्रः", meaning:"king's son", type:"genitive"}, {parts:["धर्म", "क्षेत्र"], combined:"धर्मक्षेत्रम्", meaning:"field of dharma", type:"genitive"}, {parts:["देव", "आलय"], combined:"देवालयः", meaning:"temple", type:"genitive"}] } },
+            { id: 18, block: "Y2: Compounds", title: "Dvandva Samāsa", icon: "🤝", type: "compound", xpReward: 200, content: { compounds: [{parts:["राम", "लक्ष्मण"], combined:"रामलक्ष्मणौ", meaning:"Rama and Lakshmana (dual)", type:"dvandva"}, {parts:["मात", "पित"], combined:"मातापितरौ", meaning:"parents", type:"dvandva"}] } },
+            { id: 19, block: "Y2: Compounds", title: "Bahuvrīhi Samāsa", icon: "🎭", type: "compound", xpReward: 220, content: { compounds: [{parts:["महा", "आत्मा"], combined:"महात्मा", meaning:"great soul", type:"bahuvrīhi"}, {parts:["दीर्घ", "बाहु"], combined:"दीर्घबाहुः", meaning:"long armed", type:"bahuvrīhi"}] } },
+            { id: 20, block: "Y2: Verbs", title: "Optative Mood", icon: "🙏", type: "verbAdvanced", xpReward: 250, content: { paradigm: [{person:"1st Sg", form:"गच्छेयम्", gloss:"I should go"}, {person:"3rd Sg", form:"गच्छेत्", gloss:"he should go"}, {person:"3rd Pl", form:"गच्छेयुः", gloss:"they should go"}] } },
+            { id: 21, block: "Y2: Verbs", title: "Passive Voice", icon: "↩️", type: "verbAdvanced", xpReward: 250, content: { paradigm: [{active:"रामः पुस्तकं पठति", passive:"रामेण पुस्तकं पठ्यते", gloss:"The book is read by Rama"}, {active:"बालकः फलं खादति", passive:"बालकेन फलं खाद्यते", gloss:"The fruit is eaten by the boy"}] } },
+            { id: 22, block: "Y2: Participles", title: "Present Participles", icon: "🏃", type: "participle", xpReward: 230, content: { forms: [{root:"गम्", active:"गच्छन्", passive:"गम्यमान", meaning:"going"}, {root:"पठ्", active:"पठन्", passive:"पठ्यमान", meaning:"reading"}] } },
+            { id: 23, block: "Y2: Participles", title: "Past Participles", icon: "✅", type: "participle", xpReward: 230, content: { forms: [{root:"गम्", form:"गत", meaning:"gone"}, {root:"कृ", form:"कृत", meaning:"done"}] } },
+            { id: 24, block: "Y2: Dual", title: "Dual Number", icon: "👥", type: "dual", xpReward: 210, content: { paradigm: [{case:"Nom Dual", singular:"रामः", dual:"रामौ", meaning:"two Ramas"}, {case:"Acc Dual", singular:"रामम्", dual:"रामौ", meaning:"two Ramas (obj)"}] } },
+            { id: 25, block: "Y2: Reading", title: "Hitopadeśa", icon: "🦊", type: "reading", xpReward: 300, content: { passages: [{sa:"मित्रं च शत्रुं च विदुर्बुधाः", en:"The wise know both friend and foe"}, {sa:"सुहृदं पण्डितं दूरे वरं मूर्खः समीपतः", en:"Better a fool nearby than a wise friend far away"}] } },
+            { id: 26, block: "Y2: Reading", title: "Bhagavad Gītā", icon: "🕉️", type: "reading", xpReward: 350, content: { passages: [{sa:"कर्मण्येवाधिकारस्ते मा फलेषु कदाचन", en:"You have the right to action alone, never to its fruits"}, {sa:"योगस्थः कुरु कर्माणि", en:"Established in yoga, perform actions"}] } },
+            { id: 27, block: "Y2: Prosody", title: "Anuṣṭubh Meter", icon: "🎵", type: "meter", xpReward: 280, content: { pattern: "8 syllables per line (4 lines)", example: { sa: "धर्मक्षेत्रे कुरुक्षेत्रे समवेता युयुत्सवः", meter: "anuṣṭubh" } } },
+            { id: 28, block: "Y2: Prosody", title: "Meter Recognition", icon: "🎼", type: "meter", xpReward: 280, content: { meters: [{name:"Anuṣṭubh", pattern:"8 syllables"}, {name:"Indravajrā", pattern:"11 syllables"}] } }
+        ],
+        achievements: [
+            { id: 1, title: "Awakening", desc: "Complete 1 lesson", icon: "🌅" },
+            { id: 3, title: "Master of Script", desc: "Complete all Script lessons", icon: "🔤" },
+            { id: 5, title: "Perfect Mind", desc: "Score 100% in a trial", icon: "✨" },
+            { id: 6, title: "Polyglot", desc: "Learn 20 vocabulary words", icon: "🗣️" },
+            { id: 7, title: "Compound Master", desc: "Complete all Samāsa lessons", icon: "🔗" },
+            { id: 10, title: "Poet's Eye", desc: "Complete all meter lessons", icon: "🎭" },
+            { id: 12, title: "Grand Master", desc: "Complete ALL lessons", icon: "👑" }
+        ],
+        storyNodes: [
+            { id: 0, text: "Y1: You stand at the edge of the Dandaka Forest. A sage approaches you.", question: "How do you greet him?", choices: [{text:"नमस्ते (Namaste)", next:1, correct:true}, {text:"गच्छ (Gaccha)", next:0, correct:false}] },
+            { id: 1, text: "The sage smiles. 'Where are you going, traveler?'", question: "Answer 'I go to the forest'.", choices: [{text:"अहम् वनम् गच्छामि", next:2, correct:true}, {text:"अहम् वनम् खादामि", next:1, correct:false}] },
+            { id: 2, text: "'Beware,' he says. 'There is no water there.'", question: "Ask for water.", choices: [{text:"जलम् अस्ति वा?", next:3, correct:true}, {text:"अग्नि अस्ति वा?", next:2, correct:false}] },
+            { id: 3, text: "Y2: He hands you a scroll. 'Translate this verse.'", question: "सत्यमेव जयते", choices: [{text:"Truth alone triumphs", next:4, correct:true}, {text:"Water is life", next:3, correct:false}] },
+            { id: 4, text: "You have proven your worth. He asks one final question. 'Who is the King's Son?'", question: "Form the Tatpuruṣa compound:", choices: [{text:"राजपुत्रः (Rājaputraḥ)", next:5, correct:true}, {text:"पुत्रराजः (Putrarājaḥ)", next:4, correct:false}] },
+            { id: 5, text: "JOURNEY COMPLETE. You have mastered the path.", isEnd: true }
+        ]
+    };
+
+    let playerData = { xp: 0, level: 1, streak: 0, completedLessons: [], unlockedAchievements: [], vocabulary: [] };
+    let currentQuiz = []; let quizIndex = 0; let quizScore = 0; let currentLessonId = 0;
+
+    /* ---- INIT ---- */
+    window.onload = () => {
+        if(localStorage.getItem("sanskritQuestFull")) playerData = JSON.parse(localStorage.getItem("sanskritQuestFull"));
+        showSection('lessons');
+        updateUI();
+
+        document.querySelectorAll('.menu-item[data-section]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                showSection(item.dataset.section);
+            });
+        });
+        document.getElementById('modal-close').onclick = closeModal;
+        document.getElementById('reset-btn').onclick = () => { if(confirm("Reset all progress?")) { localStorage.removeItem("sanskritQuestFull"); location.reload(); }};
+    };
+
+    function save() { localStorage.setItem("sanskritQuestFull", JSON.stringify(playerData)); updateUI(); }
+    function updateUI() {
+        document.getElementById('xp-value').innerText = playerData.xp;
+        document.getElementById('level-value').innerText = Math.floor(playerData.xp / 500) + 1;
+        document.getElementById('streak-value').innerText = playerData.streak;
+    }
+
+    /* ---- RENDERER ---- */
+    function showSection(section) {
+        const c = document.getElementById('content-area');
+        const t = document.querySelector('.section-title');
+        c.innerHTML = '';
+        
+        if (section === 'lessons') {
+            t.innerText = "The Golden Path";
+            const blocks = ["Y1: Script", "Y1: Nouns", "Y1: Vocab", "Y1: Verbs", "Y1: Sandhi", "Y1: Reading", "Y2: Compounds", "Y2: Verbs", "Y2: Participles", "Y2: Dual", "Y2: Reading", "Y2: Prosody"];
+            blocks.forEach(block => {
+                const ls = gameData.lessons.filter(l => l.block === block);
+                if (!ls.length) return;
+                const h = document.createElement('div'); h.innerText = block; h.style = "color:var(--primary-gold); margin:25px 0 10px; font-family:'Cinzel'; font-size:18px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"; c.appendChild(h);
+                const grid = document.createElement('div'); grid.className = 'lesson-grid';
+                ls.forEach(l => {
+                    const done = playerData.completedLessons.includes(l.id);
+                    const prevId = gameData.lessons[gameData.lessons.findIndex(x=>x.id===l.id)-1]?.id || 0;
+                    const unlocked = l.id === 1 || playerData.completedLessons.includes(prevId);
+                    
+                    const div = document.createElement('div');
+                    div.className = `lesson-card stagger-in ${unlocked ? '' : 'locked'}`;
+                    div.innerHTML = `<div class="lesson-icon">${l.icon}</div><div class="lesson-title">${l.title}</div><div class="lesson-progress">${done ? 'MASTERED' : (unlocked ? 'BEGIN' : 'LOCKED')}</div>`;
+                    if(unlocked) div.onclick = () => openLesson(l);
+                    grid.appendChild(div);
+                });
+                c.appendChild(grid);
+            });
+        }
+        else if (section === 'practice') {
+            t.innerText = "Training Grounds";
+            c.innerHTML = `<div class="lesson-grid">
+                <div class="lesson-card" onclick="startMemoryGame()"><div class="lesson-icon">🧠</div><div class="lesson-title">Memory Match</div><div class="lesson-progress">Pairs</div></div>
+                <div class="lesson-card" onclick="startCompoundGame()"><div class="lesson-icon">🔨</div><div class="lesson-title">Compound Builder</div><div class="lesson-progress">Construct</div></div>
+                <div class="lesson-card" onclick="startMeterGame()"><div class="lesson-icon">🎵</div><div class="lesson-title">Meter Master</div><div class="lesson-progress">Rhythm</div></div>
+                <div class="lesson-card" onclick="startVoiceGame()"><div class="lesson-icon">↩️</div><div class="lesson-title">Voice Transformer</div><div class="lesson-progress">Grammar</div></div>
+            </div>`;
+        }
+        else if (section === 'achievements') {
+            t.innerText = "Hall of Glory";
+            const grid = document.createElement('div'); grid.className = 'lesson-grid';
+            gameData.achievements.forEach(a => {
+                const unlocked = playerData.unlockedAchievements.includes(a.id);
+                const div = document.createElement('div');
+                div.className = `lesson-card stagger-in ${unlocked?'':'locked'}`;
+                div.innerHTML = `<div class="lesson-icon">${a.icon}</div><div class="lesson-title">${a.title}</div><div class="lesson-progress">${unlocked?'CLAIMED':a.desc}</div>`;
+                grid.appendChild(div);
+            });
+            c.appendChild(grid);
+        }
+        else if (section === 'vocabulary') {
+            t.innerText = "Lexicon";
+            if(playerData.vocabulary.length === 0) c.innerHTML = "<p style='text-align:center'>Complete lessons to unlock words.</p>";
+            const grid = document.createElement('div'); grid.style = "display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:15px;";
+            playerData.vocabulary.forEach(w => {
+                const div = document.createElement('div'); div.className = 'sentence-card stagger-in'; div.style = "padding:15px; background:rgba(255,255,255,0.05); border-left:3px solid var(--primary-gold);";
+                div.innerHTML = `<span style="font-size:20px; color:var(--text-gold)">${w.sanskrit}</span><br><span style="font-style:italic">${w.english}</span>`;
+                grid.appendChild(div);
+            });
+            c.appendChild(grid);
+        }
+        else if (section === 'story') {
+            t.innerText = "The Journey";
+            c.innerHTML = `<div style="text-align:center; margin-top:50px;"><button class="btn btn-primary" onclick="startStory(0)">Begin Adventure</button></div>`;
+        }
+    }
+
+    /* ---- LESSON LOGIC ---- */
+    function openLesson(l) {
+        currentLessonId = l.id;
+        let h = `<h2>${l.title}</h2>`;
+        
+        // Year 1 Logic
+        if(l.content.vowels || l.content.consonants) {
+            h += `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(60px,1fr)); gap:10px;">`;
+            (l.content.vowels || l.content.consonants).forEach(x => h += `<div style="text-align:center; padding:10px; background:rgba(255,255,255,0.1); border-radius:8px;"><div style="color:var(--primary-gold); font-size:24px;">${x.devanagari}</div><div style="font-size:12px;">${x.roman}</div></div>`);
+            h += `</div>`;
+        }
+        else if(l.content.paradigm) {
+            h += `<table class="paradigm-table"><tr><th>Context</th><th>Form</th><th>Meaning</th></tr>`;
+            l.content.paradigm.forEach(p => h += `<tr><td>${p.case||p.person||p.active}</td><td>${p.form||p.passive}</td><td>${p.gloss}</td></tr>`);
+            h += `</table>`;
+        }
+        else if(l.content.words) {
+            l.content.words.forEach(w => {
+                h += `<div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);"><span style="color:var(--text-gold);font-size:18px;">${w.sanskrit}</span> - ${w.english}</div>`;
+                if(!playerData.vocabulary.some(v => v.sanskrit === w.sanskrit)) playerData.vocabulary.push(w);
+            });
+            save();
+        }
+        else if(l.content.sentences || l.content.passages) {
+            (l.content.sentences || l.content.passages).forEach(s => h += `<div style="padding:15px; background:rgba(255,255,255,0.05); margin:10px 0; border-left:3px solid var(--primary-gold);"><span style="font-size:18px; color:var(--text-gold)">${s.sa}</span><br><i>${s.en}</i></div>`);
+        }
+        // Year 2 Logic
+        else if(l.content.compounds) {
+            h += `<table class="paradigm-table"><tr><th>Parts</th><th>Combined</th><th>Meaning</th></tr>`;
+            l.content.compounds.forEach(c => h += `<tr><td>${c.parts.join(" + ")}</td><td>${c.combined}</td><td>${c.meaning}</td></tr>`);
+            h += `</table>`;
+        }
+        else if(l.content.pattern) {
+             h += `<p style="text-align:center; padding:20px;">${l.content.pattern}</p><div style="text-align:center; font-size:20px; color:var(--text-gold)">${l.content.example.sa}</div>`;
+        }
+        
+        h += `<div style="text-align:center; margin-top:30px;"><button class="btn btn-primary" onclick="startQuiz(${l.id})">Begin Trial</button></div>`;
+        showModal(h);
+    }
+
+    function startQuiz(id) {
+        const l = gameData.lessons.find(x => x.id === id);
+        currentQuiz = [];
+        const c = l.content;
+        const pool = c.vowels || c.consonants || c.words || c.paradigm || c.sentences || c.compounds || c.passages || c.forms || c.pairs || [{q:"Pattern?", a:"8", o:["8","10","12"]}];
+        
+        for(let i=0; i<5; i++) {
+            const item = pool[i % pool.length];
+            let q, a, opts;
+            if(c.vowels || c.consonants) { q = `Roman for ${item.devanagari}?`; a = item.roman; opts=pool.map(x=>x.roman); }
+            else if(c.words) { q = `Meaning of ${item.sanskrit}?`; a = item.english; opts=pool.map(x=>x.english); }
+            else if(c.paradigm) { q = `Meaning of ${item.form || item.passive}?`; a = item.gloss; opts=pool.map(x=>x.gloss); }
+            else if(c.compounds) { q = `Compound for ${item.meaning}?`; a = item.combined; opts=pool.map(x=>x.combined); }
+            else if(c.sentences || c.passages) { q = `Translate: ${item.sa}`; a = item.en; opts=pool.map(x=>x.en); }
+            else { q = item.q||"Check"; a = item.a||"Ok"; opts=["Ok","No","Yes"]; }
+            
+            const dist = opts.filter(x=>x!==a).sort(()=>Math.random()-0.5).slice(0,3);
+            currentQuiz.push({q, a, o:[a,...dist].sort(()=>Math.random()-0.5)});
+        }
+        quizIndex = 0; quizScore = 0; renderQuestion();
+    }
+
+    function renderQuestion() {
+        if(quizIndex >= currentQuiz.length) { finishQuiz(); return; }
+        const q = currentQuiz[quizIndex];
+        let h = `<h2>Trial ${quizIndex+1}/${currentQuiz.length}</h2><p style="text-align:center; font-size:18px; margin:20px 0;">${q.q}</p>`;
+        q.o.forEach(opt => h += `<div class="quiz-option" onclick="checkAnswer(this, '${opt.replace(/'/g,"\\'")}','${q.a.replace(/'/g,"\\'")} ')">${opt}</div>`);
+        document.getElementById('modal-body').innerHTML = h;
+    }
+
+    window.checkAnswer = (el, sel, cor) => {
+        sel = sel.trim(); cor = cor.trim();
+        document.querySelectorAll('.quiz-option').forEach(d => d.style.pointerEvents = 'none');
+        if(sel === cor) { el.classList.add('correct'); quizScore++; spawnParticles(el); }
+        else { el.classList.add('incorrect'); document.querySelectorAll('.quiz-option').forEach(d=>{if(d.innerText===cor)d.classList.add('correct')}); }
+        setTimeout(() => { quizIndex++; renderQuestion(); }, 1000);
+    };
+
+    function finishQuiz() {
+        const pass = quizScore >= 3;
+        let h = `<h2>Trial Complete</h2><p style="text-align:center; font-size:40px; margin:20px;">${pass?'🎉':'📚'}</p><p style="text-align:center">Score: ${quizScore}/${currentQuiz.length}</p>`;
+        if(pass) h += `<div style="text-align:center"><button class="btn btn-primary" onclick="completeLesson()">Accept Reward</button></div>`;
+        else h += `<div style="text-align:center"><button class="btn btn-secondary" onclick="startQuiz(${currentLessonId})">Retry</button></div>`;
+        document.getElementById('modal-body').innerHTML = h;
+    }
+
+    window.completeLesson = () => {
+        if(!playerData.completedLessons.includes(currentLessonId)) {
+            playerData.completedLessons.push(currentLessonId);
+            const l = gameData.lessons.find(x=>x.id===currentLessonId);
+            playerData.xp += l.xpReward;
+            save();
+            checkAchievements();
+        }
+        closeModal(); showSection('lessons');
+    };
+
+    /* ---- MINI GAMES ---- */
+    
+    // 1. MEMORY MATCH
+    let memCards = [], flipped = [], matched = 0;
+    window.startMemoryGame = () => {
+        if(playerData.vocabulary.length < 6) { alert("Learn more words in Year 1 lessons first!"); return; }
+        const pool = playerData.vocabulary.sort(()=>Math.random()-0.5).slice(0,6);
+        memCards = []; pool.forEach((w,i) => { memCards.push({val:w.sanskrit, id:i}, {val:w.english, id:i}); });
+        memCards.sort(()=>Math.random()-0.5); matched = 0; flipped = [];
+        let h = `<h2>Memory Match</h2><div class="memory-grid">`;
+        memCards.forEach((c,i) => h += `<div class="memory-card" id="mc${i}" onclick="flipCard(${i})">?</div>`);
+        h += `</div>`; showModal(h);
+    };
+    window.flipCard = (i) => {
+        if(flipped.length >= 2 || document.getElementById(`mc${i}`).classList.contains('flipped')) return;
+        const el = document.getElementById(`mc${i}`); el.classList.add('flipped'); el.innerText = memCards[i].val;
+        flipped.push({i, id:memCards[i].id});
+        if(flipped.length === 2) {
+            if(flipped[0].id === flipped[1].id) {
+                setTimeout(() => { document.getElementById(`mc${flipped[0].i}`).classList.add('matched'); document.getElementById(`mc${flipped[1].i}`).classList.add('matched'); flipped=[]; matched++; if(matched===6) {alert("You won!"); closeModal();} }, 600);
+            } else {
+                setTimeout(() => { document.getElementById(`mc${flipped[0].i}`).classList.remove('flipped'); document.getElementById(`mc${flipped[0].i}`).innerText='?'; document.getElementById(`mc${flipped[1].i}`).classList.remove('flipped'); document.getElementById(`mc${flipped[1].i}`).innerText='?'; flipped=[]; }, 1000);
+            }
+        }
+    };
+
+    // 2. COMPOUND BUILDER
+    let droppedParts = [];
+    window.startCompoundGame = () => {
+        droppedParts = [];
+        let h = `<h2>🔨 Compound Builder</h2><p style="text-align:center">Construct: <strong>King's Son</strong> (Rajaputra)</p>
+        <div class="compound-builder">
+            <div class="compound-part" draggable="true" ondragstart="drag(event)">पुत्र</div>
+            <div class="compound-part" draggable="true" ondragstart="drag(event)">राज</div>
+            <div class="compound-part" draggable="true" ondragstart="drag(event)">देव</div>
+        </div>
+        <div class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)" id="dropzone">Drop Parts Here</div>
+        <button class="btn btn-primary" onclick="verifyCompound()">Forge</button>`;
+        showModal(h);
+    };
+    window.drag = (ev) => ev.dataTransfer.setData("text", ev.target.innerText);
+    window.drop = (ev) => { ev.preventDefault(); const d = ev.dataTransfer.getData("text"); droppedParts.push(d); ev.target.innerText = droppedParts.join(" + "); };
+    window.allowDrop = (ev) => ev.preventDefault();
+    window.verifyCompound = () => {
+        if(droppedParts.join("")==="राजपुत्र") { alert("Correct! +50 XP"); playerData.xp+=50; save(); closeModal(); }
+        else { alert("Incorrect. Try: Raja + Putra"); droppedParts=[]; document.getElementById('dropzone').innerText='Drop Here'; }
+    };
+
+    // 3. STORY MODE
+    window.startStory = (id) => {
+        const n = gameData.storyNodes.find(x=>x.id===id);
+        if(n.isEnd) { showModal(`<h2>The End</h2><p>${n.text}</p><button class="btn btn-primary" onclick="closeModal()">Return</button>`); return; }
+        let h = `<h2>The Journey</h2><p style="text-align:center; font-size:18px;">${n.text}</p><p style="text-align:center;color:var(--primary-gold)">${n.question}</p>`;
+        n.choices.forEach(c => h += `<div class="quiz-option" onclick="checkStory(this, ${c.correct}, ${c.next})">${c.text}</div>`);
+        showModal(h);
+    };
+    window.checkStory = (el, correct, next) => {
+        if(correct) { el.classList.add('correct'); spawnParticles(el); setTimeout(()=>startStory(next), 800); }
+        else { el.classList.add('incorrect'); }
+    };
+
+    // 4. METER & VOICE
+    let userMeter = [0,0,0,0,0,0,0,0];
+    window.startMeterGame = () => {
+        userMeter = [0,0,0,0,0,0,0,0];
+        let h = `<h2>🎵 Meter Master</h2><p style="text-align:center">Set Anuṣṭubh: L S L S L L S L</p><div class="meter-bar">`;
+        for(let i=0; i<8; i++) h += `<div class="syllable short" id="syl${i}" onclick="toggleSyl(${i})">S</div>`;
+        h += `</div><button class="btn btn-primary" onclick="if(JSON.stringify(userMeter)==='[1,0,1,0,1,1,0,1]'){alert('Perfect!');closeModal();}else{alert('Wrong pattern.');}">Check</button>`;
+        showModal(h);
+    };
+    window.toggleSyl = (i) => { const el=document.getElementById(`syl${i}`); if(el.classList.contains('short')){el.className='syllable long';el.innerText='L';userMeter[i]=1;}else{el.className='syllable short';el.innerText='S';userMeter[i]=0;} };
+
+    window.startVoiceGame = () => {
+        let h = `<h2>↩️ Voice Shift</h2><p style="text-align:center">Passive of: <strong>रामः पठति</strong></p>
+        <div class="quiz-option" onclick="alert('Correct! +50 XP');playerData.xp+=50;save();closeModal()">रामेण पठ्यते</div>
+        <div class="quiz-option" onclick="alert('Incorrect case.')">रामः पुस्तकेन पठति</div>`;
+        showModal(h);
+    };
+
+    /* ---- UTILS ---- */
+    function checkAchievements() {
+        const c = playerData.completedLessons;
+        if(c.length >= 1 && !playerData.unlockedAchievements.includes(1)) unlock(1);
+        if(c.includes(4) && !playerData.unlockedAchievements.includes(3)) unlock(3);
+        if(c.includes(19) && !playerData.unlockedAchievements.includes(7)) unlock(7);
+        if(c.length >= 28 && !playerData.unlockedAchievements.includes(12)) unlock(12);
+    }
+    function unlock(id) { playerData.unlockedAchievements.push(id); alert(`Achievement Unlocked: ${gameData.achievements.find(x=>x.id===id).title}`); save(); }
+    
+    function showModal(h) { document.getElementById('modal-body').innerHTML = h; document.getElementById('modal').classList.add('active'); }
+    function closeModal() { document.getElementById('modal').classList.remove('active'); }
+    
+    function spawnParticles(el) {
+        const rect = el.getBoundingClientRect();
+        for(let i=0; i<20; i++) {
+            const p = document.createElement('div'); p.className='particle';
+            p.style.left = (rect.left + rect.width/2) + 'px'; p.style.top = (rect.top + rect.height/2) + 'px';
+            p.style.setProperty('--tx', (Math.random()-0.5)*150 + 'px'); p.style.setProperty('--ty', (Math.random()-0.5)*150 + 'px');
+            p.style.animation = `particle 0.6s ease-out forwards`;
+            document.body.appendChild(p); setTimeout(()=>p.remove(),600);
+        }
+    }
+
+</script>
+</body>
+</html>
